@@ -17,6 +17,14 @@ export default function UserPage() {
     genre: "",
   });
   const [editingMovie, setEditingMovie] = useState(null);
+  const [filters, setFilters] = useState({
+    title: "",
+    genre: "",
+    releaseYear: "",
+    userRating: "",
+    favorite: false,
+  });
+  const [theme, setTheme] = useState("dark");
   const router = useRouter();
 
   useEffect(() => {
@@ -40,6 +48,13 @@ export default function UserPage() {
 
     fetchMovies();
   }, []);
+
+  useEffect(() => {
+    // Carregar tema salvo
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) setTheme(savedTheme);
+    document.documentElement.setAttribute("data-theme", savedTheme || "dark");
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -71,14 +86,15 @@ export default function UserPage() {
     setEditingMovie(movie);
     setNewMovie({
       title: movie.title,
-      userRating: movie.userRating,
-      releaseYear: movie.releaseYear,
+      userRating: String(movie.userRating),
+      releaseYear: String(movie.releaseYear),
       genre: movie.genre,
     });
   };
 
   const handleUpdateMovie = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingMovie) return;
     try {
       const movieData = {
         ...newMovie,
@@ -111,21 +127,128 @@ export default function UserPage() {
     }
   };
 
+  // Troca de tema
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+  };
+
+  // Favoritar/desfavoritar filme
+  const handleToggleFavorite = async (movie) => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:3001/movies/${movie._id}`,
+        { favorite: !movie.favorite }
+      );
+      setMovies(movies.map((m) => (m._id === movie._id ? response.data : m)));
+    } catch (error) {
+      console.error("Erro ao favoritar filme:", error);
+    }
+  };
+
+  // Filtro de filmes
+  const filteredMovies = movies.filter((movie) => {
+    const matchTitle = movie.title
+      .toLowerCase()
+      .includes(filters.title.toLowerCase());
+    const matchGenre = movie.genre
+      .toLowerCase()
+      .includes(filters.genre.toLowerCase());
+    const matchYear =
+      !filters.releaseYear || String(movie.releaseYear) === filters.releaseYear;
+    const matchFavorite = !filters.favorite || movie.favorite;
+    const matchRating =
+      !filters.userRating || String(movie.userRating) === filters.userRating;
+    return (
+      matchTitle && matchGenre && matchYear && matchFavorite && matchRating
+    );
+  });
+
   return (
     <div className="user-container">
       <header className="user-header">
         <h1>Bem-vindo, {user.username}!</h1>
-        <button className="button logout-button" onClick={handleLogout}>
-          Sair
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="button logout-button" onClick={handleLogout}>
+            Sair
+          </button>
+        </div>
       </header>
+
+      {/* Filtros de busca */}
+      <div className="filters-container">
+        <input
+          type="text"
+          placeholder="Filtrar por título"
+          value={filters.title}
+          onChange={(e) => setFilters({ ...filters, title: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Filtrar por gênero"
+          value={filters.genre}
+          onChange={(e) => setFilters({ ...filters, genre: e.target.value })}
+        />
+        <input
+          type="number"
+          placeholder="Ano"
+          value={filters.releaseYear}
+          onChange={(e) =>
+            setFilters({ ...filters, releaseYear: e.target.value })
+          }
+        />
+        <input
+          type="number"
+          placeholder="Nota"
+          min="1"
+          max="10"
+          value={filters.userRating}
+          onChange={(e) =>
+            setFilters({ ...filters, userRating: e.target.value })
+          }
+        />
+        <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <input
+            type="checkbox"
+            checked={filters.favorite}
+            onChange={(e) =>
+              setFilters({ ...filters, favorite: e.target.checked })
+            }
+          />
+          Favoritos
+        </label>
+      </div>
+
+      {/* Contagem de filmes */}
+      <div style={{ margin: "10px 0", fontWeight: "bold" }}>
+        Filmes encontrados: {filteredMovies.length}
+      </div>
 
       <div className="movies-container">
         <h2>Filmes Cadastrados</h2>
-        {movies.length > 0 ? (
-          movies.map((movie) => (
+        {filteredMovies.length > 0 ? (
+          filteredMovies.map((movie) => (
             <div key={movie._id} className="movie-card">
-              <h3>{movie.title}</h3>
+              <h3>
+                {movie.title}{" "}
+                <span
+                  style={{
+                    cursor: "pointer",
+                    color: movie.favorite ? "#dc143c" : "#bbb",
+                    fontSize: "1.2em",
+                  }}
+                  title={
+                    movie.favorite
+                      ? "Remover dos favoritos"
+                      : "Adicionar aos favoritos"
+                  }
+                  onClick={() => handleToggleFavorite(movie)}
+                >
+                  ★
+                </span>
+              </h3>
               <p>Nota do usuário: {movie.userRating}</p>
               <p>Ano: {movie.releaseYear}</p>
               <p>Gênero: {movie.genre}</p>

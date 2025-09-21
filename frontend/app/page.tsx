@@ -7,10 +7,10 @@ export default function Home() {
   return (
     <div className="home-container">
       <Image
-        src="/logo.png"
+        src="/logo-v2.png"
         alt="Movie Mood Logo"
-        width={200}
-        height={200}
+        width={1400}
+        height={1400}
         className="logo-home"
       />
 

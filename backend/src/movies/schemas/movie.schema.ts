@@ -6,7 +6,7 @@ export class Movie extends Document {
   @Prop({ required: true })
   title: string;
 
-  @Prop({ required: true, min: 1, max: 10 }) // Nota do usuário entre 1 e 10
+  @Prop({ required: true, min: 1, max: 10 })
   userRating: number;
 
   @Prop({ required: true })
@@ -14,6 +14,9 @@ export class Movie extends Document {
 
   @Prop({ required: true })
   genre: string;
+
+  @Prop({ default: false })
+  favorite: boolean;
 }
 
 export const MovieSchema = SchemaFactory.createForClass(Movie);

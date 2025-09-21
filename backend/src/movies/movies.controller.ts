@@ -4,6 +4,7 @@ import {
   Post,
   Delete,
   Patch,
+  Put,
   Body,
   Param,
 } from '@nestjs/common';
@@ -30,6 +31,11 @@ export class MoviesController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateMovieDto: any) {
+    return this.moviesService.update(id, updateMovieDto);
+  }
+
+  @Put(':id')
+  replace(@Param('id') id: string, @Body() updateMovieDto: any) {
     return this.moviesService.update(id, updateMovieDto);
   }
 
